@@ -121,6 +121,13 @@
 </head>
 <body>
 
+<div id="loading" style="position:fixed;inset:0;background:#0D0D0D;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem">
+  <div style="font-family:'Syncopate',sans-serif;font-size:1.2rem;color:#F47C20;letter-spacing:0.15em">◈ NEXTOUCH BIBLO</div>
+  <div style="width:40px;height:40px;border:3px solid #333;border-top-color:#F47C20;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+  <div style="font-family:'Rajdhani',sans-serif;font-size:0.8rem;color:#666;letter-spacing:0.1em;text-transform:uppercase">Cargando manuales...</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
 <header>
   <div class="logo" onclick="goHome()">NEXTOUCH <span>BIBLO</span></div>
   <div class="breadcrumb" id="bc"></div>
@@ -267,29 +274,47 @@
 
 <script>
   var db = { puertas: [], automatismos: [] };
-  var config = { cid: '', folder: 'MANUALES' };
   var currentCat = null, currentBrandIdx = null;
   var editMarcaIdx = null, editModeloIdx = null;
-  var currentModeloIdx = null, pendingPDFUrl = '', pendingPDFNombre = '';
+  var currentModeloIdx = null;
 
-  try { var s = localStorage.getItem('nextouch_biblo'); if (s) db = JSON.parse(s); } catch(e) {}
-  try { var c = localStorage.getItem('nextouch_config'); if (c) config = JSON.parse(c); } catch(e) {}
+  var BIN_ID = '699ca1f6ae596e708f430afe';
+  var API_KEY = '$2a$10$.ONZmajSTpQekmuOOGQDx.cNguNX5OoeyH.lTEtcl4x08lmDx36jC';
+  var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
 
-  function dbSave() { localStorage.setItem('nextouch_biblo', JSON.stringify(db)); }
-  function configSave() { localStorage.setItem('nextouch_config', JSON.stringify(config)); }
-
-  function openConfig() {
-    document.getElementById('inp-cid').value = config.cid || '';
-    document.getElementById('inp-folder').value = config.folder || 'MANUALES';
-    openModal('m-config');
+  async function dbLoad() {
+    try {
+      showLoading(true);
+      var r = await fetch(BIN_URL + '/latest', {
+        headers: { 'X-Master-Key': API_KEY }
+      });
+      var json = await r.json();
+      db = json.record;
+      showLoading(false);
+    } catch(e) {
+      showLoading(false);
+      showToast('⚠ Error al cargar datos', 'err');
+    }
   }
-  function saveConfig() {
-    config.cid = document.getElementById('inp-cid').value.trim();
-    config.folder = document.getElementById('inp-folder').value.trim() || 'MANUALES';
-    configSave();
-    closeModal('m-config');
-    showToast('✓ Configuración guardada', 'ok');
+
+  async function dbSave() {
+    try {
+      await fetch(BIN_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify(db)
+      });
+    } catch(e) {
+      showToast('⚠ Error al guardar datos', 'err');
+    }
   }
+
+  function showLoading(show) {
+    var el = document.getElementById('loading');
+    if (el) el.style.display = show ? 'flex' : 'none';
+  }
+
+
 
   function onPDFSelected(input) {
     if (!input.files || !input.files[0]) return;
@@ -503,6 +528,8 @@
     clearTimeout(t._timer);
     t._timer = setTimeout(function() { t.classList.remove('show'); }, 2800);
   }
+  // ── INIT ──
+  dbLoad().then(function() { goHome(); });
 </script>
 </body>
 </html>
