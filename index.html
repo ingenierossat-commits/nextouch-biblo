@@ -438,10 +438,11 @@
     pdfs.forEach(function(pdf, pi) {
       var item = document.createElement('div');
       item.className = 'pdf-item';
-      item.innerHTML = '<span class="pdf-icon">📄</span><span class="pdf-name">' + pdf.nombre + '</span><div class="pdf-acts"><button class="btn btn-ghost">👁️ Abrir</button><button class="btn btn-danger">🗑️</button></div>';
+      item.innerHTML = '<span class="pdf-icon">📄</span><span class="pdf-name">' + pdf.nombre + '</span><div class="pdf-acts"><button class="btn btn-ghost">👁️ Abrir</button><button class="btn btn-ghost">✏️</button><button class="btn btn-danger">🗑️</button></div>';
       item.querySelector('.pdf-name').addEventListener('click', function() { window.open(pdf.url, '_blank'); });
       item.querySelectorAll('button')[0].addEventListener('click', function() { window.open(pdf.url, '_blank'); });
-      item.querySelectorAll('button')[1].addEventListener('click', function() { deletePDF(mi, pi); });
+      item.querySelectorAll('button')[1].addEventListener('click', function() { editPDF(mi, pi); });
+      item.querySelectorAll('button')[2].addEventListener('click', function() { deletePDF(mi, pi); });
       pdflist.appendChild(item);
     });
     var badge = document.getElementById('badge-' + mi);
@@ -470,6 +471,16 @@
     var row = document.getElementById('model-' + mi);
     if (row && !row.classList.contains('open')) row.classList.add('open');
     showToast('✓ Manual añadido', 'ok');
+  }
+
+  function editPDF(mi, pi) {
+    var pdf = db[currentCat][currentBrandIdx].modelos[mi].pdfs[pi];
+    var nuevoNombre = prompt('Nuevo nombre del manual:', pdf.nombre);
+    if (nuevoNombre === null || !nuevoNombre.trim()) return;
+    db[currentCat][currentBrandIdx].modelos[mi].pdfs[pi].nombre = nuevoNombre.trim();
+    dbSave();
+    renderPDFList(mi);
+    showToast('✓ Nombre actualizado', 'ok');
   }
 
   function deletePDF(mi, pi) {
